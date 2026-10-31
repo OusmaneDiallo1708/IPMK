@@ -32,7 +32,7 @@ if (fs.existsSync(envPath)) {
 // =======================
 // 📌 Initialisation App (AVANT CORS !)
 // =======================
-const app = express();  // 👈 DOIT ÊTRE AVANT app.use()
+const app = express();
 
 // =======================
 // 📌 Middleware de base
@@ -41,31 +41,41 @@ app.use(express.json());
 app.use(cookieParser());
 
 // =======================
-// 📌 Configuration CORS (simplifiée pour le développement)
+// 📌 Configuration CORS (corrigée pour Vercel + Previews)
 // =======================
 const allowedOrigins = [
   "http://localhost:5173",
+  "http://localhost:5174",
   "http://localhost:3000",
-  process.env.CORS_ORIGIN
+  "https://ipmk.vercel.app",
+  process.env.CORS_ORIGIN,
 ].filter(Boolean);
 
 const corsOptions = {
-  origin: function(origin, callback) {
+  origin: function (origin, callback) {
+    // 1. Requêtes sans origin (Postman, curl, même-origine) → autorisées
     if (!origin) return callback(null, true);
-    
+
+    // 2. Liste blanche explicite
     if (allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      console.log(`⚠️ CORS bloqué: ${origin}`);
-      callback(null, false);
+      return callback(null, true);
     }
+
+    // 3. Toutes les previews Vercel du projet (ipmk-*.vercel.app)
+    if (/^https:\/\/ipmk(-[a-z0-9]+)?\.vercel\.app$/.test(origin)) {
+      return callback(null, true);
+    }
+
+    // 4. Sinon on bloque avec un log clair côté serveur
+    console.log(`⚠️ CORS bloqué: ${origin}`);
+    return callback(new Error(`CORS non autorisé pour ${origin}`), false);
   },
   credentials: true,
   exposedHeaders: ["sessionId"],
-  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE"],
+  methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
   preflightContinue: false,
-  optionsSuccessStatus: 204
+  optionsSuccessStatus: 204,
 };
 
 app.use(cors(corsOptions));
@@ -93,7 +103,7 @@ startDB();
 // 📌 Routes
 // =======================
 app.get("/", (req, res) => {
-  res.status(200).json({ 
+  res.status(200).json({
     message: "API en ligne",
     status: "en ligne",
     version: "1.0.0",
@@ -101,9 +111,9 @@ app.get("/", (req, res) => {
       health: "/health",
       jwtid: "/jwtid",
       utilisateur: "/api/utilisateur",
-      produits: "/api/allRoute/getAllProduits"
+      produits: "/api/allRoute/getAllProduits",
     },
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -112,10 +122,10 @@ app.get("/jwtid", requireAuth, (req, res) => {
 });
 
 app.get("/health", (req, res) => {
-  res.status(200).json({ 
-    status: "ok", 
+  res.status(200).json({
+    status: "ok",
     message: "Serveur en ligne",
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 });
 
@@ -127,9 +137,9 @@ app.use("/api/allRoute", allRoute);
 // 📌 Route 404
 // =======================
 app.use((req, res) => {
-  res.status(404).json({ 
+  res.status(404).json({
     error: "Route non trouvée",
-    path: req.originalUrl 
+    path: req.originalUrl,
   });
 });
 
@@ -138,9 +148,18 @@ app.use((req, res) => {
 // =======================
 app.use((err, req, res, next) => {
   console.error("❌ Erreur serveur:", err.message);
-  res.status(500).json({ 
+
+  // Erreur CORS → statut 403 explicite
+  if (err.message && err.message.startsWith("CORS non autorisé")) {
+    return res.status(403).json({
+      error: "CORS bloqué",
+      message: err.message,
+    });
+  }
+
+  res.status(500).json({
     error: "Erreur interne du serveur",
-    message: process.env.NODE_ENV === 'development' ? err.message : undefined
+    message: process.env.NODE_ENV === "development" ? err.message : undefined,
   });
 });
 
@@ -151,6 +170,6 @@ const PORT = process.env.PORT || 4999;
 
 app.listen(PORT, () => {
   console.log(`✅ Serveur démarré sur le port ${PORT}`);
-  console.log(`🌍 Environnement: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`🌍 Environnement: ${process.env.NODE_ENV || "development"}`);
   console.log(`🟢 Health check: http://localhost:${PORT}/health`);
 });
