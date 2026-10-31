@@ -1,21 +1,12 @@
-const mongoose = require('mongoose');
 const router = require('express').Router();
 const path = require('path');
 const multer = require("multer");
 const { requireAuth, requireRole } = require('../middlewares/requireAuth');
-const upload = require("../middlewares/upload");
 
 // ==================== IMPORTS DES CONTRÔLEURS ====================
-const demandeCaisseController = require('../controllers/demandeCaisseController');
-const categorieController = require('../controllers/categorieController');
-const produitController = require('../controllers/produitController');
 const etudiantController = require('../controllers/etudiantController');
 const inscriptionController = require('../controllers/inscriptionController');
-const venteController = require('../controllers/venteController');
-const stockController = require('../controllers/stockController');
 const utilisateurController = require('../controllers/utilisateurController');
-const approvisionnementController = require('../controllers/approvisionnementController');
-const prelevementController = require('../controllers/prelevementController');
 const enseignantController = require('../controllers/enseignantsController');
 const noteController = require('../controllers/noteController');
 const paiementController = require('../controllers/paiementController'); // 🆕 COMPTABILITÉ
@@ -108,40 +99,6 @@ router.put('/utilisateur/activerUtilisateur/:id', requireAuth, requireRole(['adm
 router.put('/utilisateur/desactiverUtilisateur/:id', requireAuth, requireRole(['admin', 'superAdmin']), utilisateurController.desactiverUtilisateur);
 router.put('/utilisateur/modifierRole/:id', requireAuth, requireRole(['admin', 'superAdmin']), utilisateurController.modifierRoleUtilisateur);
 router.get('/utilisateur/utilisateursEnAttente', requireAuth, requireRole(['admin', 'superAdmin']), utilisateurController.getUtilisateursEnAttente);
-
-// ==================================================
-// ================= ROUTES CATEGORIES ==============
-// ==================================================
-router.post('/addCategorie', categorieController.addCategories);
-router.get('/getAllCategorie', categorieController.getAllCategories);
-router.get('/getUnCategorie/:id', categorieController.getUnCateroies);
-router.put('/updateCategorie/:id', categorieController.updateCategories);
-router.delete('/deleteCategorie/:id', categorieController.deleteCategories);
-
-// ==================================================
-// ================= ROUTES PRODUITS ================
-// ==================================================
-router.post('/addProduit', requireAuth, upload.single("image"), produitController.addProduits);
-router.get('/stats', produitController.getStatsProduits);
-router.get('/getAllProduit', produitController.getAllProduits);
-router.get('/getAllProduits', produitController.getAllProduitsAvecUtilisateur);
-router.get('/getUnProduit/:id', produitController.getUnProduits);
-router.put('/updateProduit/:id', requireAuth, upload.single("image"), produitController.updateProduits);
-router.delete('/deleteProduit/:id', requireAuth, produitController.deleteProduits);
-
-// ==================================================
-// ================= ROUTES VENTES ==================
-// ==================================================
-router.post("/addVente", requireAuth, venteController.addVente);
-router.get("/getAllVente", requireAuth, venteController.getAllVentes);
-router.get("/getUnVente/:id", requireAuth, venteController.getUneVente);
-router.put("/updateVente/:id", requireAuth, venteController.updateVente);
-router.delete("/deleteVente/:id", requireAuth, venteController.deleteVente);
-router.get("/ventes/total-par-jour", requireAuth, venteController.getTotalVentesParJour);
-router.get("/ventes/total-par-mois", requireAuth, venteController.getTotalVentesParMois);
-router.get("/ventes/total-par-annee", requireAuth, venteController.getTotalVentesParAnnee);
-router.get("/ventes/stats-completes", requireAuth, venteController.getStatsVentesCompletes);
-router.post('/ventes/encaisser/:id', requireAuth, venteController.encaisserVente);
 
 // ==================================================
 // ============ ✅ ROUTES ÉTUDIANTS =================
@@ -320,7 +277,7 @@ router.delete('/notes/:id',
 );
 
 // ==================================================
-// ============ ✅ ROUTES COMPTABILITÉ ============= 🆕 AJOUT
+// ============ ✅ ROUTES COMPTABILITÉ ============= 🆕
 // ⚠️ ORDRE CRITIQUE : routes fixes AVANT /:id
 // ==================================================
 
@@ -386,72 +343,5 @@ router.delete('/comptabilite/paiements/:id',
     requireRole(['admin', 'superAdmin','Comptable']),
     paiementController.supprimerPaiement
 );
-
-// ==================================================
-// ============ ROUTES APPROVISIONNEMENT ============
-// ==================================================
-router.post('/approvisionner', requireAuth, requireRole(['admin', 'superAdmin']), approvisionnementController.approvisionnerUtilisateur);
-router.get('/approvisionnements', requireAuth, requireRole(['admin', 'superAdmin']), approvisionnementController.getApprovisionnements);
-router.get('/stats-ventes', requireAuth, requireRole(['admin', 'superAdmin']), approvisionnementController.getStatsAdmin);
-router.get('/mon-stock', requireAuth, approvisionnementController.getMonStock);
-router.post('/enregistrer-vente', requireAuth, approvisionnementController.enregistrerVente);
-router.get('/mes-ventes', requireAuth, approvisionnementController.getMesVentes);
-router.delete('/annuler-vente/:venteId', requireAuth, approvisionnementController.annulerVente);
-router.post('/demander-depot/:venteId', requireAuth, approvisionnementController.demanderDepotCaisse);
-router.post('/valider-depot/:venteId', requireAuth, requireRole(['admin', 'superAdmin']), approvisionnementController.validerDepotCaisse);
-router.get('/demandes-depot', requireAuth, requireRole(['admin', 'superAdmin']), approvisionnementController.getDemandesDepot);
-router.put('/approvisionnement/:id', requireAuth, requireRole(['admin', 'superAdmin']), approvisionnementController.updateApprovisionnement);
-router.delete('/approvisionnement/:id', requireAuth, requireRole(['admin', 'superAdmin']), approvisionnementController.deleteApprovisionnement);
-router.get('/approvisionnements-all', requireAuth, requireRole(['admin', 'superAdmin']), approvisionnementController.getAllApprovisionnements);
-
-// ==================================================
-// ================= ROUTES STOCKS ==================
-// ==================================================
-router.get('/stocks', requireAuth, (req, res) => stockController.getStocks(req, res));
-router.post('/stocks', requireAuth, (req, res) => stockController.createStock(req, res));
-router.get('/stocks/stats', requireAuth, (req, res) => stockController.getStockStats(req, res));
-router.get('/lieux', requireAuth, (req, res) => stockController.getLieux(req, res));
-router.get('/stocks/:id', requireAuth, (req, res) => stockController.getStockById(req, res));
-router.put('/stocks/:id', requireAuth, (req, res) => stockController.updateStock(req, res));
-router.delete('/stocks/:id', requireAuth, (req, res) => stockController.deleteStock(req, res));
-
-// ==================================================
-// ================ ROUTES ARCHIVES =================
-// ==================================================
-router.post('/ventes/archiver-et-vider', requireAuth, requireRole(['admin', 'superAdmin']), (req, res) => venteController.archiverEtViderVentes(req, res));
-router.post('/stocks/archiver-et-vider', requireAuth, requireRole(['admin', 'superAdmin']), (req, res) => stockController.archiverEtViderStocks(req, res));
-router.get('/archives', requireAuth, (req, res) => stockController.getArchives(req, res));
-router.get('/archives/:id', requireAuth, (req, res) => stockController.getArchiveById(req, res));
-router.delete('/archives/:id', requireAuth, requireRole(['admin', 'superAdmin']), (req, res) => stockController.deleteArchive(req, res));
-
-// ==================================================
-// ================= ROUTE ADMIN ====================
-// ==================================================
-router.post('/stocks/recalculer', requireAuth, requireRole(['admin', 'superAdmin']), async (req, res) => {
-    try {
-        res.status(200).json({ success: true, message: 'Recalcul effectué' });
-    } catch (error) {
-        res.status(500).json({ success: false, message: error.message });
-    }
-});
-
-router.post('/regler-reste/:venteId', requireAuth, approvisionnementController.reglerReste);
-
-// ==================================================
-// ============ DEMANDES DE CAISSE ==================
-// ==================================================
-router.post('/demandes-caisse', requireAuth, demandeCaisseController.creerDemande);
-router.get('/demandes-caisse', requireAuth, requireRole(['admin', 'superAdmin']), demandeCaisseController.getDemandes);
-router.put('/demandes-caisse/approuver/:id', requireAuth, requireRole(['admin', 'superAdmin']), demandeCaisseController.approuverDemande);
-router.put('/demandes-caisse/refuser/:id', requireAuth, requireRole(['admin', 'superAdmin']), demandeCaisseController.refuserDemande);
-router.get('/mes-demandes-caisse', requireAuth, demandeCaisseController.getMesDemandes);
-router.delete('/demandes-caisse/:id', requireAuth, requireRole(['admin', 'superAdmin']), demandeCaisseController.supprimerDemande);
-router.delete('/demandes-caisse/vider-traitees', requireAuth, requireRole(['admin', 'superAdmin']), demandeCaisseController.viderDemandesTraitees);
-
-// ==================================================
-// ================ ROUTES PRÉLÈVEMENT ==============
-// ==================================================
-router.post('/alimenter-caisse', requireAuth, prelevementController.alimenterCaisse);
-router.get('/total-preleve', requireAuth, prelevementController.getTotalPreleve);
 
 module.exports = router;
