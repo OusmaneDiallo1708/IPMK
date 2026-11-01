@@ -6,10 +6,14 @@ import { Key, Eye, EyeOff, Mail, Lock, XCircle, CheckCircle } from "lucide-react
 import { useUser } from "../../components/log/context/UserContext";
 
 // =======================
-// 📌 Configuration API URL (EN DUR POUR PRODUCTION)
+// 📌 Configuration API URL
 // =======================
-// const API_URL = "https://touramancy2026.onrender.com";
-const API_URL = "http://localhost:4999"; // URL de l'API backend
+// Vite lit VITE_API_URL depuis Vercel (Settings → Environment Variables)
+// Fallback local si la variable n'est pas définie (dev sur ton PC)
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4999";
+
+console.log("🔧 API_BASE_URL =", API_URL);
+console.log("🌐 Mode:", import.meta.env.MODE);
 
 interface SignInFormProps {
   setIsSingUp: (val: boolean) => void;
@@ -108,7 +112,7 @@ const SignInForm: React.FC<SignInFormProps> = ({ setIsSingUp }) => {
       if (response.data?.utilisateur) {
         if (response.data.token) {
           localStorage.setItem('token', response.data.token);
-          console.log("✅ Token stocké dans localStorage:", response.data.token);
+          console.log("✅ Token stocké dans localStorage");
         }
         
         localStorage.setItem('utilisateur', JSON.stringify(response.data.utilisateur));
