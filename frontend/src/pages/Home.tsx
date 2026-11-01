@@ -18,8 +18,6 @@ import ListeNotes from "./notes/ListeNotes";
 import Bulletin from "./notes/Bulletin";
 import Deconnexion from "../components/log/logout/Deconnexion";
 import AddUsers from "../components/log/admin/AddUsers";
-// import CaisseForm from "./caisse/CaisseForm";   // ⏸️ Fichier introuvable → build Vercel
-import GestionDemandesCaisse from '../components/log/admin/GestionDemandesCaisse';
 import { PiStudent } from "react-icons/pi";
 import api from "../config/axiosConfig";
 
@@ -303,7 +301,7 @@ const Home: React.FC = () => {
       // case 'caisse':       return <CaisseForm />;   // ⏸️ Désactivé (fichier absent)
       case 'user':         return <AddUsers />;
       case 'logout':       return <Deconnexion />;
-      case 'demandesCaisse': return <GestionDemandesCaisse />;
+      // case 'demandesCaisse': return <GestionDemandesCaisse />;   // ⏸️ Désactivé (fichier absent)
 
       case 'waiting':      return <WaitingPage role={currentRole} />;
       default:             return <WaitingPage role={currentRole} />;
