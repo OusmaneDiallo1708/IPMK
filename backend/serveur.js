@@ -61,8 +61,12 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // 3. Toutes les previews Vercel du projet (ipmk-*.vercel.app)
-    if (/^https:\/\/ipmk(-[a-z0-9]+)?\.vercel\.app$/.test(origin)) {
+    // 3. Toutes les URLs Vercel du projet (production + previews)
+    //    ✅ Accepte : ipmk.vercel.app
+    //    ✅ Accepte : ipmk-iexsayks5-...-0ac41000.vercel.app (avec tirets)
+    //    ✅ Accepte : ipmk-git-master-team.vercel.app
+    //    ❌ Refuse  : autre-projet.vercel.app
+    if (/^https:\/\/ipmk[a-z0-9-]*\.vercel\.app$/.test(origin)) {
       return callback(null, true);
     }
 
