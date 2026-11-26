@@ -5,7 +5,8 @@ import {
   X, Bell, User, Search, Users, 
   CheckCircle, Clock, RefreshCw,
   ChevronDown, ChevronRight, Banknote, GraduationCap, Calculator,
-  Award, FileSpreadsheet, ShieldAlert, Lock
+  Award, FileSpreadsheet, ShieldAlert, Lock,
+  FolderOpen                                              // 👈 AJOUT
 } from "lucide-react"; 
 import { motion, AnimatePresence } from "framer-motion";
 import { useUser } from "../components/log/context/UserContext";
@@ -20,6 +21,7 @@ import Deconnexion from "../components/log/logout/Deconnexion";
 import AddUsers from "../components/log/admin/AddUsers";
 import { PiStudent } from "react-icons/pi";
 import api from "../config/axiosConfig";
+import GestionFichiers from "./fichiers/GestionFichiers";   // 👈 AJOUT
 
 // ==================== TYPES ====================
 interface Notification {
@@ -41,19 +43,19 @@ interface SidebarItem {
 
 // ==================== 🔐 CONFIGURATION DES ACCÈS PAR RÔLE ====================
 const ROLE_PAGES_ACCESS: Record<string, string[]> = {
-  'superAdmin': ['dashbord', 'etudiants', 'enseignants', 'notes', 'bulletin', 'comptabilite', 'user'],
-  'admin':      ['dashbord', 'etudiants', 'enseignants', 'notes', 'bulletin', 'comptabilite', 'user'],
-  'Comptable':  ['comptabilite', 'etudiants'], // ✅ Comptabilité + Étudiants
-  'Enseignant': ['notes'],
-  'Tuteur':     ['notes'],
-  'Etudiant':   ['notes'],
+  'superAdmin': ['dashbord', 'etudiants', 'enseignants', 'notes', 'bulletin', 'comptabilite', 'user', 'fichiers'],  // 👈 AJOUT
+  'admin':      ['dashbord', 'etudiants', 'enseignants', 'notes', 'bulletin', 'comptabilite', 'user', 'fichiers'],  // 👈 AJOUT
+  'Comptable':  ['comptabilite', 'etudiants', 'fichiers'],  // 👈 AJOUT
+  'Enseignant': ['notes', 'fichiers'],                      // 👈 AJOUT
+  'Tuteur':     ['notes', 'fichiers'],                      // 👈 AJOUT
+  'Etudiant':   ['notes', 'fichiers'],                      // 👈 AJOUT
   'visiteur':   [],
 };
 
 const DEFAULT_PAGE_BY_ROLE: Record<string, string> = {
   'superAdmin': 'dashbord',
   'admin':      'dashbord',
-  'Comptable':  'comptabilite', // ✅ Arrive sur la compta
+  'Comptable':  'comptabilite',
   'Enseignant': 'notes',
   'Tuteur':     'notes',
   'Etudiant':   'notes',
@@ -96,7 +98,6 @@ const Home: React.FC = () => {
   const isCheckingRef = useRef<boolean>(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // ✅ Récupère le rôle depuis localStorage
   const getCurrentUserRole = () => {
     try {
       const storedUser = localStorage.getItem('utilisateur');
@@ -110,7 +111,6 @@ const Home: React.FC = () => {
     return 'visiteur';
   };
 
-  // ✅ Vérification session
   useEffect(() => {
     const token = localStorage.getItem('token');
     const storedUser = localStorage.getItem('utilisateur');
@@ -125,8 +125,6 @@ const Home: React.FC = () => {
         setUserRole(role);
         setUser(userData);
         console.log("✅ Utilisateur connecté:", userData.email, "Rôle:", role);
-
-        // ✅ Rediriger vers la page par défaut du rôle
         setActivePage(DEFAULT_PAGE_BY_ROLE[role] || 'waiting');
         setIsCheckingAuth(false);
       } catch (e) {
@@ -153,7 +151,6 @@ const Home: React.FC = () => {
     }
   }, [navigate, setUser]);
 
-  // ✅ Alerte : étudiants en attente (uniquement pour admin/superAdmin)
   const checkAlerts = useCallback(async () => {
     if (isCheckingRef.current) return;
     isCheckingRef.current = true;
@@ -245,12 +242,11 @@ const Home: React.FC = () => {
     { id: "notes",        icon: Award,           label: "Notes" },
     { id: "bulletin",     icon: FileSpreadsheet, label: "Bulletins" },
     { id: "comptabilite", icon: Banknote,        label: "Comptabilité" },
+    { id: "fichiers",     icon: FolderOpen,      label: "Fichiers" },   // 👈 AJOUT
   ];
 
-  // ✅ Filtre : on ne garde que les items autorisés pour le rôle
   const sidebarItems = allSidebarItems.filter(item => allowedPages.includes(item.id));
 
-  // Sous-menus Admin (uniquement pour admin/superAdmin)
   const adminSubItems: SidebarItem[] = [
     { id: "user", icon: Users, label: "Utilisateurs" },
   ];
@@ -264,7 +260,6 @@ const Home: React.FC = () => {
 
   const unreadNotifications = notifications.filter(n => !n.read).length;
 
-  // ✅ Titre dynamique du header
   const getPageTitle = (): string => {
     const pageMap: Record<string, string> = {
       'dashbord':       'Tableau de Bord',
@@ -273,6 +268,7 @@ const Home: React.FC = () => {
       'notes':          'Notes',
       'bulletin':       'Bulletins',
       'comptabilite':   'Comptabilité',
+      'fichiers':       'Fichiers partagés',   // 👈 AJOUT
       'caisse':         'Caisses',
       'demandesCaisse': 'Demandes de Caisse',
       'user':           'Utilisateurs',
@@ -283,7 +279,6 @@ const Home: React.FC = () => {
 
   // ==================== 🎨 RENDER PAGE PRINCIPALE ====================
   const renderMainContent = () => {
-    // Sécurité : si la page n'est pas autorisée pour ce rôle → WaitingPage
     if (!allowedPages.includes(activePage)) {
       return <WaitingPage role={currentRole} />;
     }
@@ -292,17 +287,12 @@ const Home: React.FC = () => {
       case 'dashbord':     return <Dashboard />;
       case 'etudiants':    return <ListeEtudiants />;
       case 'enseignants':  return <ListeEnseignants />;
-
-      // ✅ ListeNotes reçoit le rôle + userId pour filtrage côté backend
       case 'notes':        return <ListeNotes userRole={currentRole} userId={user?._id} />;
       case 'bulletin':     return <Bulletin userRole={currentRole} userId={user?._id} />;
-
       case 'comptabilite': return <Comptabilite />;
-      // case 'caisse':       return <CaisseForm />;   // ⏸️ Désactivé (fichier absent)
+      case 'fichiers':     return <GestionFichiers />;   // 👈 AJOUT
       case 'user':         return <AddUsers />;
       case 'logout':       return <Deconnexion />;
-      // case 'demandesCaisse': return <GestionDemandesCaisse />;   // ⏸️ Désactivé (fichier absent)
-
       case 'waiting':      return <WaitingPage role={currentRole} />;
       default:             return <WaitingPage role={currentRole} />;
     }

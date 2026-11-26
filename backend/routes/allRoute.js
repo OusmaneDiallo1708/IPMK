@@ -9,7 +9,8 @@ const inscriptionController = require('../controllers/inscriptionController');
 const utilisateurController = require('../controllers/utilisateurController');
 const enseignantController = require('../controllers/enseignantsController');
 const noteController = require('../controllers/noteController');
-const paiementController = require('../controllers/paiementController'); // 🆕 COMPTABILITÉ
+const paiementController = require('../controllers/paiementController');
+const fichierController = require('../controllers/fichierController');   // 🆕 AJOUT
 
 // ==================== MULTER : PHOTOS UTILISATEURS ====================
 const storage = multer.diskStorage({
@@ -81,6 +82,53 @@ const uploadCvEnseignant = multer({
         cb(new Error('Seuls les fichiers PDF, DOC, DOCX sont autorisés'));
     }
 });
+
+// ==================== MULTER : FICHIERS (EXCEL, WORD, PPT, PDF) ==================== 🆕 AJOUT
+const storageFichier = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = 'uploads/fichiers/';
+        const fs = require('fs');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        const base = path.basename(file.originalname, ext)
+                         .replace(/[^a-zA-Z0-9-_]/g, '_')
+                         .slice(0, 40);
+        cb(null, `${Date.now()}_${base}${ext}`);
+    }
+});
+
+const ALLOWED_FICHIER_MIMES = [
+    // Excel
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'text/csv',
+    'application/csv',
+    // Word
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    // PowerPoint
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+    // PDF
+    'application/pdf'
+];
+const ALLOWED_FICHIER_EXTS = ['.xlsx', '.xls', '.csv', '.docx', '.doc', '.pptx', '.ppt', '.pdf'];
+
+const uploadFichier = multer({
+    storage: storageFichier,
+    limits: { fileSize: 25 * 1024 * 1024 },
+    fileFilter: (req, file, cb) => {
+        const ext = path.extname(file.originalname).toLowerCase();
+        if (ALLOWED_FICHIER_MIMES.includes(file.mimetype) || ALLOWED_FICHIER_EXTS.includes(ext)) {
+            return cb(null, true);
+        }
+        cb(new Error('Type de fichier non autorisé. Utilisez Excel, Word, PowerPoint ou PDF.'));
+    }
+});
+// 🆕 FIN AJOUT MULTER FICHIERS
 
 // ==================== ROUTE TEST ====================
 router.get('/test', (req, res) => {
@@ -277,7 +325,7 @@ router.delete('/notes/:id',
 );
 
 // ==================================================
-// ============ ✅ ROUTES COMPTABILITÉ ============= 🆕
+// ============ ✅ ROUTES COMPTABILITÉ =============
 // ⚠️ ORDRE CRITIQUE : routes fixes AVANT /:id
 // ==================================================
 
@@ -343,5 +391,54 @@ router.delete('/comptabilite/paiements/:id',
     requireRole(['admin', 'superAdmin','Comptable']),
     paiementController.supprimerPaiement
 );
+
+// ==================================================
+// ============ ✅ ROUTES FICHIERS ==================  🆕 AJOUT
+// ⚠️ ORDRE CRITIQUE : routes fixes AVANT /:id
+// ==================================================
+
+// 🔔 Badge : demandes d'accès en attente (À PLACER AVANT /:id)
+router.get('/fichiers/demandes-en-attente',
+    requireAuth,
+    fichierController.compterDemandesEnAttente
+);
+
+// 📋 Liste des fichiers accessibles
+router.get('/fichiers',
+    requireAuth,
+    fichierController.listerFichiers
+);
+
+// 📤 Upload d'un fichier
+router.post('/fichiers/upload',
+    requireAuth,
+    uploadFichier.single('fichier'),
+    fichierController.uploadFichier
+);
+
+// ⬇️ Télécharger / ouvrir un fichier
+router.get('/fichiers/:id/telecharger',
+    requireAuth,
+    fichierController.telechargerFichier
+);
+
+// 🙋 Demander l'accès à un fichier
+router.post('/fichiers/:id/demander',
+    requireAuth,
+    fichierController.demanderAcces
+);
+
+// ✅ Traiter une demande (propriétaire)
+router.put('/fichiers/:id/demande/:demandeId',
+    requireAuth,
+    fichierController.traiterDemande
+);
+
+// 🗑️ Supprimer un fichier
+router.delete('/fichiers/:id',
+    requireAuth,
+    fichierController.supprimerFichier
+);
+// 🆕 FIN AJOUT ROUTES FICHIERS
 
 module.exports = router;
