@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 // =======================
 // 📌 Configuration API URL (EN DUR POUR VERCELL)
 // =======================
-const API_URL = "https://touramancy2026.onrender.com";
+const API_URL = "https://ipmk.onrender.com";
 
 interface User {
   _id?: string;
