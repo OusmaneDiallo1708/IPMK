@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import api from "../../config/axiosConfig";
 import AddNote from "./AddNote";
+import { getImageUrl } from "../../utils/imageUrl";
 
 // ==================== NOTIFICATION ====================
 const Notification = ({ type, message, onClose }) => {
@@ -79,7 +80,7 @@ const ConfirmDelete = ({ note, onClose, onConfirm, loading }) => (
 
 // ==================== COMPOSANT PRINCIPAL ====================
 const ListeNotes = () => {
-  const [formType, setFormType] = useState(null); // null = liste, "ajout" = formulaire
+  const [formType, setFormType] = useState(null);
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -87,7 +88,6 @@ const ListeNotes = () => {
   const [filterTrimestre, setFilterTrimestre] = useState("");
   const [notification, setNotification] = useState({ show: false, type: "success", message: "" });
 
-  // États UI
   const [expandedStudents, setExpandedStudents] = useState(new Set());
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -96,7 +96,6 @@ const ListeNotes = () => {
   const showNotification = (type, message) =>
     setNotification({ show: true, type, message });
 
-  // ==================== FETCH ====================
   const fetchNotes = async () => {
     setLoading(true);
     try {
@@ -111,7 +110,6 @@ const ListeNotes = () => {
 
   useEffect(() => { fetchNotes(); }, []);
 
-  // ==================== HELPER MOYENNE ====================
   const calculerMoyenne = (notesList) => {
     if (!notesList || notesList.length === 0) return 0;
     let total = 0;
@@ -123,7 +121,6 @@ const ListeNotes = () => {
     return coef > 0 ? total / coef : 0;
   };
 
-  // ==================== FILTRES ====================
   const filteredNotes = useMemo(() => {
     return notes.filter((n) => {
       const t = searchTerm.toLowerCase();
@@ -137,7 +134,6 @@ const ListeNotes = () => {
     });
   }, [notes, searchTerm, filterClasse, filterTrimestre]);
 
-  // ==================== GROUPES PAR ÉTUDIANT ====================
   const groupes = useMemo(() => {
     const map = new Map();
     filteredNotes.forEach((n) => {
@@ -151,14 +147,12 @@ const ListeNotes = () => {
       .sort((a, b) => b.moyenne - a.moyenne);
   }, [filteredNotes]);
 
-  // ==================== CLASSES DISPO ====================
   const classesDisponibles = useMemo(() => {
     const set = new Set();
     notes.forEach((n) => n.classe && set.add(n.classe));
     return Array.from(set).sort();
   }, [notes]);
 
-  // ==================== STATS ====================
   const stats = useMemo(() => {
     const total = filteredNotes.length;
     const moyenneGlobale = calculerMoyenne(filteredNotes);
@@ -167,7 +161,6 @@ const ListeNotes = () => {
     return { total, moyenneGlobale, reussite, echec };
   }, [filteredNotes, groupes]);
 
-  // ==================== EXPAND ====================
   const toggleStudent = (id) => {
     setExpandedStudents((prev) => {
       const next = new Set(prev);
@@ -177,7 +170,6 @@ const ListeNotes = () => {
     });
   };
 
-  // ✅ NOUVEAU : Tout replier / tout déplier
   const toggleAll = () => {
     if (expandedStudents.size === groupes.length) {
       setExpandedStudents(new Set());
@@ -186,7 +178,6 @@ const ListeNotes = () => {
     }
   };
 
-  // ==================== DELETE ====================
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -202,12 +193,10 @@ const ListeNotes = () => {
     }
   };
 
-  // ==================== AJOUT RAPIDE ====================
   const handleQuickAdd = (etudiant) => {
     setQuickAddEtudiant(etudiant);
   };
 
-  // ==================== APPRÉCIATION ====================
   const getAppreciation = (moy) => {
     if (moy >= 18) return { texte: "Excellent", bg: "bg-emerald-100", color: "text-emerald-700" };
     if (moy >= 16) return { texte: "Très Bien", bg: "bg-emerald-100", color: "text-emerald-700" };
@@ -218,7 +207,6 @@ const ListeNotes = () => {
     return { texte: "Très Faible", bg: "bg-red-100", color: "text-red-700" };
   };
 
-  // ==================== RENDER ====================
   return (
     <div className="max-w-7xl mx-auto p-6">
       {notification.show && (
@@ -229,7 +217,6 @@ const ListeNotes = () => {
         />
       )}
 
-      {/* 🆕 MODAL AJOUT RAPIDE (note pour un étudiant précis) */}
       {quickAddEtudiant && (
         <div
           className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-10 bg-black/70 backdrop-blur-sm overflow-y-auto"
@@ -256,7 +243,6 @@ const ListeNotes = () => {
         </div>
       )}
 
-      {/* MODAL SUPPRESSION */}
       {deleteTarget && (
         <ConfirmDelete
           note={deleteTarget}
@@ -266,7 +252,6 @@ const ListeNotes = () => {
         />
       )}
 
-      {/* ===== 2 BOUTONS NAVIGATION ===== */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <button
           onClick={() => setFormType("ajout")}
@@ -303,7 +288,6 @@ const ListeNotes = () => {
         </button>
       </div>
 
-      {/* ===== FORMULAIRE AJOUT ===== */}
       {formType === "ajout" && (
         <div className="mb-8">
           <AddNote
@@ -313,10 +297,8 @@ const ListeNotes = () => {
         </div>
       )}
 
-      {/* ===== LISTE ===== */}
       {formType === null && (
         <>
-          {/* STATS */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <StatCard
               icon={<FileText size={22} />}
@@ -344,7 +326,6 @@ const ListeNotes = () => {
             />
           </div>
 
-          {/* FILTRES */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="relative">
@@ -382,7 +363,6 @@ const ListeNotes = () => {
             </div>
           </div>
 
-          {/* TABLE */}
           <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
             <div className="p-6 bg-gradient-to-r from-indigo-50 to-purple-50 border-b flex flex-wrap gap-3 items-center justify-between">
               <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
@@ -444,11 +424,9 @@ const ListeNotes = () => {
 
                       return (
                         <React.Fragment key={g.etudiant._id}>
-                          {/* ===== LIGNE ÉTUDIANT (cliquable) ===== */}
                           <tr className={`border-b-2 border-indigo-200 ${isTop ? "bg-yellow-50/40" : "bg-indigo-50/30"}`}>
                             <td colSpan={9} className="p-3">
                               <div className="flex items-center gap-3">
-                                {/* Bouton d'expansion */}
                                 <button
                                   onClick={() => toggleStudent(g.etudiant._id.toString())}
                                   className="flex items-center gap-3 flex-1 text-left hover:bg-white/60 rounded-xl p-2 transition group"
@@ -464,7 +442,7 @@ const ListeNotes = () => {
 
                                   {g.etudiant.photo ? (
                                     <img
-                                      src={`http://localhost:4999${g.etudiant.photo}`}
+                                      src={getImageUrl(g.etudiant.photo)}
                                       alt=""
                                       className="w-11 h-11 rounded-full object-cover"
                                     />
@@ -491,7 +469,6 @@ const ListeNotes = () => {
                                   </span>
                                 </button>
 
-                                {/* ✅ BOUTON + AJOUTER NOTE POUR CET ÉTUDIANT */}
                                 <button
                                   onClick={() => handleQuickAdd(g.etudiant)}
                                   className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 text-white font-bold text-sm shadow-md hover:shadow-lg hover:scale-105 transition-all"
@@ -504,7 +481,6 @@ const ListeNotes = () => {
                             </td>
                           </tr>
 
-                          {/* ===== LIGNES NOTES (si déplié) ===== */}
                           {isExpanded && g.notes.map((note) => {
                             const noteApp = getAppreciation(note.note);
                             return (
@@ -547,22 +523,20 @@ const ListeNotes = () => {
                                 </td>
                                 <td className="p-3">
                                   <div className="flex justify-center gap-1.5">
-                                    {/* Voir - via modal éditable simplifié */}
                                     <button
-                                      onClick={() => { /* Voir - redirige vers édition */ }}
+                                      onClick={() => { }}
                                       className="p-1.5 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition"
                                       title="Voir"
                                     >
                                       <Eye size={14} />
                                     </button>
                                     <button
-                                      onClick={() => { /* Éditer - ouvrir modal édition */ }}
+                                      onClick={() => { }}
                                       className="p-1.5 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition"
                                       title="Modifier"
                                     >
                                       <Edit size={14} />
                                     </button>
-                                    {/* ✅ BOUTON + RAPIDE */}
                                     <button
                                       onClick={() => handleQuickAdd(g.etudiant)}
                                       className="p-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition"
@@ -591,7 +565,6 @@ const ListeNotes = () => {
             )}
           </div>
 
-          {/* FOOTER INFO */}
           {groupes.length > 0 && (
             <div className="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-2xl flex flex-wrap gap-4 items-center justify-between text-sm">
               <div className="flex items-center gap-2 text-indigo-800">

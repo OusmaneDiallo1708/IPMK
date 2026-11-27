@@ -10,6 +10,7 @@ import api from "../../config/axiosConfig";
 import AddEtudiants from "./AddEtudiants";
 import Inscription from "./Inscription";
 import Reinscription from "./Reinscription";
+import { getImageUrl } from "../../utils/imageUrl";
 
 // ==================== NOTIFICATION ÉLÉGANTE ====================
 const Notification = ({ type, message, onClose }) => {
@@ -67,14 +68,13 @@ const StudentModal = ({ student, mode, onClose, onSave, onNotify }) => {
     adresse: student?.contacts?.adresse || student?.adresse || "",
     contacts_titre_nom: student?.contacts_titre?.nom || "",
     contacts_titre_telephone: student?.contacts_titre?.telephone || "",
-    photo: null,                                   // ✅ AJOUT : nouvelle photo
+    photo: null,
   });
 
-  // ✅ AJOUT : aperçu de la photo
   const [photoPreview, setPhotoPreview] = useState(
-    student?.photo ? `http://localhost:4999${student.photo}` : null
+    student?.photo ? getImageUrl(student.photo) : null
   );
-  const fileInputRef = useRef(null);               // ✅ AJOUT
+  const fileInputRef = useRef(null);
 
   const [saving, setSaving] = useState(false);
 
@@ -82,7 +82,6 @@ const StudentModal = ({ student, mode, onClose, onSave, onNotify }) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  // ✅ AJOUT : gestion du changement de photo
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -100,10 +99,9 @@ const StudentModal = ({ student, mode, onClose, onSave, onNotify }) => {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
-  // ✅ AJOUT : supprimer la photo choisie
   const removePhoto = () => {
     setFormData(prev => ({ ...prev, photo: null }));
-    setPhotoPreview(student?.photo ? `http://localhost:4999${student.photo}` : null);
+    setPhotoPreview(student?.photo ? getImageUrl(student.photo) : null);
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -144,7 +142,6 @@ const StudentModal = ({ student, mode, onClose, onSave, onNotify }) => {
         })
       );
 
-      // ✅ AJOUT : envoi de la nouvelle photo
       if (formData.photo) {
         fd.append("photo", formData.photo);
       }
@@ -191,7 +188,6 @@ const StudentModal = ({ student, mode, onClose, onSave, onNotify }) => {
         <div className="p-6 overflow-y-auto flex-1">
           {/* Photo + Nom */}
           <div className="flex items-center gap-4 mb-6 pb-6 border-b">
-            {/* ✅ MODIFIÉ : aperçu photo cliquable en mode édition */}
             <div className="relative">
               {photoPreview ? (
                 <img src={photoPreview} alt="" className="w-20 h-20 rounded-2xl object-cover shadow-lg" />
@@ -201,7 +197,6 @@ const StudentModal = ({ student, mode, onClose, onSave, onNotify }) => {
                 </div>
               )}
 
-              {/* ✅ AJOUT : bouton modifier photo (uniquement en édition) */}
               {!readOnly && (
                 <>
                   <button
@@ -227,7 +222,6 @@ const StudentModal = ({ student, mode, onClose, onSave, onNotify }) => {
               <h3 className="text-2xl font-bold text-gray-800">{student?.nomComplet}</h3>
               <p className="text-sm text-gray-500">{student?.genre}</p>
 
-              {/* ✅ AJOUT : info photo sélectionnée + bouton retirer */}
               {!readOnly && formData.photo && (
                 <div className="mt-2 flex items-center gap-2">
                   <span className="text-xs text-emerald-600 flex items-center gap-1">
@@ -410,7 +404,6 @@ const ListeEtudiants = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [notification, setNotification] = useState({ show: false, type: "success", message: "" });
 
-  // Modals
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [modalMode, setModalMode] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -434,7 +427,6 @@ const ListeEtudiants = () => {
 
   useEffect(() => { fetchEtudiants(); }, []);
 
-  // Suppression
   const confirmDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -450,7 +442,6 @@ const ListeEtudiants = () => {
     }
   };
 
-  // Filtre — recherche aussi par INA
   const filteredEtudiants = etudiants.filter(e => {
     const t = searchTerm.toLowerCase();
     return (
@@ -461,7 +452,6 @@ const ListeEtudiants = () => {
     );
   });
 
-  // ==================== STATUT ====================
   const renderStatut = (e) => {
     if (e.inscrit) {
       const isReinscrit = e.nombreInscriptions > 1;
@@ -575,7 +565,7 @@ const ListeEtudiants = () => {
                   <td className="p-4">
                     <div className="flex items-center gap-3">
                       {e.photo ? (
-                        <img src={`http://localhost:4999${e.photo}`} alt="" className="w-10 h-10 rounded-full object-cover" />
+                        <img src={getImageUrl(e.photo)} alt="" className="w-10 h-10 rounded-full object-cover" />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
                           {e.prenom?.[0]}{e.nom?.[0]}
@@ -648,7 +638,6 @@ const ListeEtudiants = () => {
         />
       )}
 
-      {/* ===== 4 BOUTONS ===== */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <button onClick={() => setFormType("ajout")}
           className={`flex items-center gap-3 p-5 rounded-2xl font-bold text-white shadow-lg transition-all transform hover:-translate-y-1 ${
@@ -703,7 +692,6 @@ const ListeEtudiants = () => {
         </button>
       </div>
 
-      {/* ===== FORMULAIRES ===== */}
       {formType === "ajout" && (
         <div className="mb-8">
           <AddEtudiants
@@ -731,7 +719,6 @@ const ListeEtudiants = () => {
         </div>
       )}
 
-      {/* ===== LISTE ===== */}
       <div className="mt-8">{renderListe()}</div>
 
       <style>{`
